@@ -1,0 +1,6 @@
+{
+  "name": "SAVE TRACK",
+  "description": "Native Android Logistics & Live Parcel Tracking System",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with role-based access information (Manager, Rider, Customer)",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["MANAGER", "RIDER", "CUSTOMER"] },
+        "status": { "type": "string", "enum": ["ACTIVE", "PENDING", "SUSPENDED"] },
+        "phoneNumber": { "type": "string" },
+        "vehicleType": { "type": "string" },
+        "licensePlate": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email", "role", "status"]
+    },
+    "Parcel": {
+      "title": "Parcel",
+      "description": "Parcel delivery assignment and status tracking record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "trackingNumber": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "senderAddress": { "type": "string" },
+        "deliveryAddress": { "type": "string" },
+        "pickupLat": { "type": "number" },
+        "pickupLng": { "type": "number" },
+        "destLat": { "type": "number" },
+        "destLng": { "type": "number" },
+        "recipientName": { "type": "string" },
+        "recipientPhone": { "type": "string" },
+        "customerId": { "type": "string" },
+        "riderId": { "type": "string" },
+        "riderName": { "type": "string" },
+        "managerId": { "type": "string" },
+        "status": { "type": "string", "enum": ["CREATED", "ASSIGNED", "PICKED_UP", "IN_TRANSIT", "ARRIVED", "DELIVERED", "FAILED"] },
+        "priority": { "type": "string", "enum": ["NORMAL", "EXPRESS", "URGENT"] },
+        "notes": { "type": "string" },
+        "failureReason": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "trackingNumber", "title", "senderAddress", "deliveryAddress", "recipientName", "recipientPhone", "status", "priority"]
+    },
+    "Shift": {
+      "title": "Rider Shift",
+      "description": "Rider work shift record with mandatory live CameraX selfie attendance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "riderId": { "type": "string" },
+        "riderName": { "type": "string" },
+        "riderEmail": { "type": "string" },
+        "selfieBase64": { "type": "string" },
+        "status": { "type": "string", "enum": ["ACTIVE", "COMPLETED"] },
+        "startTime": { "type": "string", "format": "date-time" },
+        "endTime": { "type": "string", "format": "date-time" },
+        "lastLat": { "type": "number" },
+        "lastLng": { "type": "number" },
+        "deviceInfo": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "riderId", "riderName", "status", "selfieBase64"]
+    },
+    "TrackingLog": {
+      "title": "Rider Live Location Log",
+      "description": "Real-time GPS telemetry from active rider foreground service",
+      "type": "object",
+      "properties": {
+        "riderId": { "type": "string" },
+        "riderName": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "accuracy": { "type": "number" },
+        "speed": { "type": "number" },
+        "heading": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["riderId", "latitude", "longitude"]
+    },
+    "DeliveryEvent": {
+      "title": "Delivery Event Audit",
+      "description": "Timestamped immutable delivery status transition event",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "parcelId": { "type": "string" },
+        "trackingNumber": { "type": "string" },
+        "actorId": { "type": "string" },
+        "actorName": { "type": "string" },
+        "eventType": { "type": "string" },
+        "description": { "type": "string" },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "parcelId", "trackingNumber", "actorId", "eventType"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profile with role-based attributes"
+    },
+    "/parcels/{parcelId}": {
+      "schema": { "$ref": "#/entities/Parcel" },
+      "description": "Parcels managed by managers and delivered by riders"
+    },
+    "/shifts/{shiftId}": {
+      "schema": { "$ref": "#/entities/Shift" },
+      "description": "Rider shift attendance and live selfie verification records"
+    },
+    "/tracking_logs/{riderId}": {
+      "schema": { "$ref": "#/entities/TrackingLog" },
+      "description": "Live GPS coordinates broadcasted by active riders"
+    },
+    "/delivery_events/{eventId}": {
+      "schema": { "$ref": "#/entities/DeliveryEvent" },
+      "description": "Auditable parcel delivery events"
+    }
+  }
+}

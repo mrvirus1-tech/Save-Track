@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for SAVE TRACK: a native Android logistics and live parcel tracking app with 3 user roles, CameraX rider shift-start selfie verification, real-time GPS tracking service, parcel lifecycle management, and Firestore backend.",
+  "updatedAt":  "2026-10-28T06:50:05.315131334Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}

@@ -1,0 +1,112 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isManager() {
+      return isSignedIn() && (getUserData().role == 'MANAGER' || request.auth.token.role == 'MANAGER');
+    }
+
+    function isRider() {
+      return isSignedIn() && (getUserData().role == 'RIDER' || request.auth.token.role == 'RIDER');
+    }
+
+    // Validation helpers
+    function isValidUser(data) {
+      return data.uid is string &&
+             data.name is string && data.name.size() > 0 &&
+             data.email is string &&
+             data.role in ['MANAGER', 'RIDER', 'CUSTOMER'] &&
+             data.status in ['ACTIVE', 'PENDING', 'SUSPENDED'];
+    }
+
+    function isValidParcel(data) {
+      return data.id is string &&
+             data.trackingNumber is string && data.trackingNumber.size() > 0 &&
+             data.title is string && data.title.size() > 0 &&
+             data.senderAddress is string &&
+             data.deliveryAddress is string &&
+             data.recipientName is string &&
+             data.recipientPhone is string &&
+             data.status in ['CREATED', 'ASSIGNED', 'PICKED_UP', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'FAILED'] &&
+             data.priority in ['NORMAL', 'EXPRESS', 'URGENT'];
+    }
+
+    function isValidShift(data) {
+      return data.id is string &&
+             data.riderId is string &&
+             data.riderName is string &&
+             data.status in ['ACTIVE', 'COMPLETED'] &&
+             data.selfieBase64 is string && data.selfieBase64.size() > 0;
+    }
+
+    function isValidTrackingLog(data) {
+      return data.riderId is string &&
+             data.latitude is number &&
+             data.longitude is number;
+    }
+
+    function isValidDeliveryEvent(data) {
+      return data.id is string &&
+             data.parcelId is string &&
+             data.trackingNumber is string &&
+             data.actorId is string &&
+             data.eventType is string;
+    }
+
+    // Collections
+
+    // Users (Protected: requires authentication)
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create, update: if isSignedIn() && (request.auth.uid == userId || isManager()) && isValidUser(request.resource.data);
+      allow delete: if isManager();
+    }
+
+    // Parcels (Readable for guest/customer parcel tracking; write operations strictly authenticated)
+    match /parcels/{parcelId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isValidParcel(request.resource.data);
+      allow update: if isSignedIn() && (
+        isManager() ||
+        (isRider() && (resource.data.riderId == request.auth.uid || request.resource.data.riderId == request.auth.uid)) ||
+        (request.resource.data.status in ['PICKED_UP', 'IN_TRANSIT', 'ARRIVED', 'DELIVERED', 'FAILED'])
+      ) && isValidParcel(request.resource.data);
+      allow delete: if isManager();
+    }
+
+    // Shifts (Protected: attendance selfies and rider audit data)
+    match /shifts/{shiftId} {
+      allow get, list: if isSignedIn();
+      allow create: if isSignedIn() && (request.resource.data.riderId == request.auth.uid || isManager()) && isValidShift(request.resource.data);
+      allow update: if isSignedIn() && (resource.data.riderId == request.auth.uid || isManager()) && isValidShift(request.resource.data);
+      allow delete: if isManager();
+    }
+
+    // Tracking Logs (Readable for guest tracking of active delivery; updates restricted to authorized riders)
+    match /tracking_logs/{riderId} {
+      allow get, list: if true;
+      allow create, update: if isSignedIn() && (request.auth.uid == riderId || isManager()) && isValidTrackingLog(request.resource.data);
+      allow delete: if isSignedIn() && (request.auth.uid == riderId || isManager());
+    }
+
+    // Delivery Events (Readable for guest tracking timeline; created by authenticated riders/managers)
+    match /delivery_events/{eventId} {
+      allow get, list: if true;
+      allow create: if isSignedIn() && isValidDeliveryEvent(request.resource.data);
+      allow update, delete: if isManager();
+    }
+  }
+}
